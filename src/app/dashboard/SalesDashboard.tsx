@@ -140,22 +140,39 @@ export default function SalesDashboard() {
   const [selectedYear, setSelectedYear] = useState(2024);
   const [chartType, setChartType] = useState<'bar' | 'line' | 'pie'>('bar');
   const [threshold, setThreshold] = useState(0);
+  const [data, setData] = useState<SaleData[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const data = useMemo(() => {
-    const rawData = getSalesByYear(selectedYear);
-    return rawData.filter(d => d.sales >= threshold);
-  }, [selectedYear, threshold]);
+  React.useEffect(() => {
+    async function fetchData() {
+      setLoading(true);
+      try {
+        const response = await fetch(`/api/sales?year=${selectedYear}`);
+        const result = await response.json();
+        setData(result);
+      } catch (error) {
+        console.error('Error fetching sales data:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, [selectedYear]);
+
+  const filteredData = useMemo(() => {
+    return data.filter(d => d.sales >= threshold);
+  }, [data, threshold]);
 
   const stats = useMemo(() => {
-    const totalSales = data.reduce((acc, curr) => acc + curr.sales, 0);
-    const avgSales = data.length > 0 ? totalSales / data.length : 0;
-    const totalProfit = data.reduce((acc, curr) => acc + curr.profit, 0);
+    const totalSales = filteredData.reduce((acc, curr) => acc + curr.sales, 0);
+    const avgSales = filteredData.length > 0 ? totalSales / filteredData.length : 0;
+    const totalProfit = filteredData.reduce((acc, curr) => acc + curr.profit, 0);
     
     // Comparison (mocking some growth)
     const growth = selectedYear === 2024 ? 12.5 : selectedYear === 2023 ? 8.2 : 5.4;
 
     return { totalSales, avgSales, totalProfit, growth };
-  }, [data, selectedYear]);
+  }, [filteredData, selectedYear]);
 
   const COLORS = ['#6366f1', '#4f46e5', '#4338ca', '#3730a3', '#312e81', '#1e1b4b'];
 
@@ -203,28 +220,28 @@ export default function SalesDashboard() {
         <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard 
             title="Total Revenue" 
-            value={`$${stats.totalSales.toLocaleString()}`} 
+            value={loading ? '...' : `$${stats.totalSales.toLocaleString()}`} 
             change={stats.growth} 
             icon={DollarSign} 
             color="bg-indigo-600"
           />
           <StatCard 
             title="Average Ticket" 
-            value={`$${Math.round(stats.avgSales).toLocaleString()}`} 
+            value={loading ? '...' : `$${Math.round(stats.avgSales).toLocaleString()}`} 
             change={2.1} 
             icon={TrendingUp} 
             color="bg-violet-600"
           />
           <StatCard 
             title="Net Profit" 
-            value={`$${stats.totalProfit.toLocaleString()}`} 
+            value={loading ? '...' : `$${stats.totalProfit.toLocaleString()}`} 
             change={stats.growth + 1} 
             icon={TrendingUp} 
             color="bg-emerald-500"
           />
           <StatCard 
             title="Active Months" 
-            value={`${data.length}`} 
+            value={loading ? '...' : `${filteredData.length}`} 
             change={0} 
             icon={TrendingUp} 
             color="bg-slate-800"
@@ -241,10 +258,27 @@ export default function SalesDashboard() {
             <ChartToggle type={chartType} setType={setChartType} />
           </div>
 
-          <div className="h-[400px] w-full">
+          <div className="h-[400px] w-full relative">
+            <AnimatePresence mode="wait">
+              {loading ? (
+                <motion.div 
+                  key="loading"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="absolute inset-0 flex items-center justify-center bg-white/50 backdrop-blur-sm z-10 rounded-xl"
+                >
+                  <div className="flex flex-col items-center gap-4">
+                    <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                    <p className="text-slate-500 font-medium animate-pulse">Fetching intelligence data...</p>
+                  </div>
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
+
             <ResponsiveContainer width="100%" height="100%">
               {chartType === 'bar' ? (
-                <BarChart data={data}>
+                <BarChart data={filteredData}>
                   <defs>
                     <linearGradient id="salesGradient" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#6366f1" stopOpacity={0.8}/>
