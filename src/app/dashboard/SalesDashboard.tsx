@@ -329,16 +329,6 @@ export default function SalesDashboard() {
           </div>
         </Card>
 
-        {/* Empty Dashboard Placeholder (as requested) */}
-        <section className="py-12 flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-3xl bg-slate-50/50">
-          <div className="bg-white p-4 rounded-2xl shadow-sm mb-4">
-            <BarChart3 className="w-10 h-10 text-slate-300" />
-          </div>
-          <h3 className="text-lg font-semibold text-slate-900">Operational Dashboard</h3>
-          <p className="text-slate-500 text-sm max-w-xs text-center mt-2">
-            This space is reserved for additional operational metrics and live data feeds.
-          </p>
-        </section>
       </main>
 
       <footer className="max-w-7xl mx-auto py-10 border-t border-slate-200 mt-12 flex flex-col md:flex-row justify-between items-center gap-4 text-slate-400 text-sm font-medium">
